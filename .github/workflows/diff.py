@@ -26,6 +26,7 @@ def ignore_code_blocks(md_file):
 def log(*args):
     global result
     result = True
+
     print(' '.join([str(item) for item in args]))
 
 
@@ -59,7 +60,6 @@ def link(e_path, z_path):
         log(len(en_links), json.dumps(dict(Counter(en_links)), indent=4, ensure_ascii=False))
         log("file://" + z_path)
         log(len(zn_links), json.dumps(dict(Counter(zn_links)), indent=4, ensure_ascii=False))
-        log('\n')
 
 
 #  Check that the number of titles in all English and Chinese documents is consistent
@@ -71,15 +71,35 @@ def title_count(e_path, z_path):
         log(len(en_titles), json.dumps(dict(Counter(en_titles)), indent=4, ensure_ascii=False))
         log("file://" + z_path)
         log(len(zn_titles), json.dumps(dict(Counter(zn_titles)), indent=4, ensure_ascii=False))
-        log('\n')
+
+
+#  Check that the number of inline code in all English and Chinese documents is consistent
+def inline_count(e_path, z_path):
+    reg = r'`+.*?`+'
+    with open(e_path, 'r', encoding='utf8') as f:
+        data = f.read()
+        en_ins = re.findall(reg, data, re.S)
+    with open(z_path, 'r', encoding='utf8') as f:
+        data = f.read()
+        zn_ins = re.findall(reg, data, re.S)
+    zn_ins = list(filter(lambda x: not x.startswith('``'), zn_ins))
+    en_ins = list(filter(lambda x: not x.startswith('``'), en_ins))
+
+    if len(en_ins) != len(zn_ins):
+        log("file://" + e_path)
+        log(len(en_ins), json.dumps(list(set(en_ins) - set(zn_ins)), indent=4, ensure_ascii=False))
+        log("file://" + z_path)
+        log(len(zn_ins), json.dumps(list(set(zn_ins) - set(en_ins)), indent=4, ensure_ascii=False))
+        print('\n')
 
 
 handler['highlight'] = highlight
 handler['link'] = link
 handler['title_count'] = title_count
+# handler['inline_count'] = inline_count
 
 if __name__ == '__main__':
-    project_path = "."
+    project_path = os.path.abspath(".")
     multi_version_dirs = os.path.join(project_path, 'versioned_docs')
     _, versions, files = list(os.walk(multi_version_dirs))[0]
     for version in versions:
@@ -96,4 +116,4 @@ if __name__ == '__main__':
 
     if result:
         print(result)
-        sys.exit(1)
+    sys.exit(1)
